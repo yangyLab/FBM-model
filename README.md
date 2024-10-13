@@ -74,3 +74,50 @@ where \( N \) is the total number of fibers. The system exhibits a complex failu
 ## Applications of FBM in Root Reinforcement of Soil
 
 In the context of soil reinforcement, the Fiber Bundle Model can be used to model how plant roots enhance the shear strength and overall stability of soil. The roots act as reinforcing fibers within the soil matrix, increasing the soil's ability to withstand shear stresses and prevent erosion. By incorporating fiber strength distributions and load redistribution mechanisms, the FBM provides insights into how different root architectures and densities influence soil stability under various loading conditions.
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+
+# 设置模型参数
+N_fibers = 1000  # 纤维的数量
+E_fibers = np.random.uniform(100, 200, N_fibers)  # 随机设置每根纤维的弹性模量
+S_0 = 150  # 强度尺度参数
+beta = 3.0  # 强度分布形状参数
+fiber_strength = S_0 * np.random.weibull(beta, N_fibers)  # 每根纤维的强度
+
+# 外部加载应变
+total_strain = np.linspace(0, 0.02, 100)  # 总应变变化范围
+stress_response = []  # 系统的总应力响应
+
+# 应力再分配机制：均匀分配破坏纤维后的应力
+def redistribute_stress(remaining_fibers, total_load):
+    return total_load / np.sum(remaining_fibers)
+
+# 模拟系统应力-应变关系
+for strain in total_strain:
+    fiber_stress = E_fibers * strain  # 计算每根纤维的应力
+    broken_fibers = fiber_stress > fiber_strength  # 判断纤维是否破坏
+    
+    # 将破坏的纤维应力置为0，未破坏的纤维保留应力
+    fiber_stress[broken_fibers] = 0
+    remaining_fibers = np.logical_not(broken_fibers)  # 剩余未破坏的纤维
+    
+    if np.sum(remaining_fibers) > 0:
+        # 重新分配应力：将应力分配给未破坏的纤维
+        redistributed_stress = redistribute_stress(remaining_fibers, np.sum(fiber_stress))
+        fiber_stress[remaining_fibers] = redistributed_stress
+    
+    # 计算系统的总应力
+    total_stress = np.mean(fiber_stress)
+    stress_response.append(total_stress)
+
+# 绘制应力-应变曲线
+plt.plot(total_strain, stress_response, label="FBM Stress-Strain Response")
+plt.xlabel("Strain")
+plt.ylabel("Stress")
+plt.title("Fiber Bundle Model (FBM) Stress-Strain Curve")
+plt.legend()
+plt.grid(True)
+plt.show()
+
